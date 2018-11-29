@@ -15,27 +15,28 @@ function blue(s) {
 function status(cur_status) {
     "date +%s" | getline cur_date
     if (prev_status == cur_status) {
-        "date -r ./status +%s" | getline prev_date
+        "date -r " STATUS_FILE " +%s" | getline prev_date
         delta = cur_date - prev_date
         "date -u -d @" delta " +'%-Hh %-Mm %-Ss'" | getline timelapse
         printf blue("since " timelapse)
     } else {
-        printf cur_status > "./status"
+        printf cur_status > STATUS_FILE
     }
 }
 
 
 BEGIN {
-    getline prev_status < "./status"
+    STATUS_FILE = ".status"
+    getline prev_status < STATUS_FILE
 }
 
-/3128\/tcp open/ {
+/[[:digit:]]+\/(udp|tcp|stcp) open/ {
     print green($0)
     status("open")
     next
 }
 
-/3128\/tcp closed/ {
+/[[:digit:]]+\/(udp|tcp|stcp) closed/ {
     print red($0)
     status("closed")
     next
