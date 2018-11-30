@@ -12,36 +12,49 @@ function blue(s) {
     printf "\033[1;34m" s "\033[0m "
 }
 
-function status(cur_status) {
+function set_status(status) {
+    STATUS = status
+    print status > STATUS_FILE
+}
+
+function log_status(status) {
+    getline STATUS < STATUS_FILE
     "date +%s" | getline cur_date
-    if (prev_status == cur_status) {
+
+    if (status == STATUS) {
         "date -r " STATUS_FILE " +%s" | getline prev_date
         delta = cur_date - prev_date
         "date -u -d @" delta " +'%-Hh %-Mm %-Ss'" | getline timelapse
         printf blue("since " timelapse)
     } else {
-        printf cur_status > STATUS_FILE
+        set_status(status)
     }
 }
 
 
 BEGIN {
     STATUS_FILE = ".status"
-    getline prev_status < STATUS_FILE
+    STATUS = ""
 }
 
 /[[:digit:]]+\/(udp|tcp|stcp) open/ {
     print green($0)
-    status("open")
+    log_status("open")
     next
 }
 
 /[[:digit:]]+\/(udp|tcp|stcp) closed/ {
     print red($0)
-    status("closed")
+    log_status("closed")
     next
 }
 
 {
     print $0
+}
+
+END {
+    if (STATUS == "") {
+        set_status("unknown")
+    }
 }
